@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "portable_files": [
+    {
+      "source": "portable/AGENTS.md",
+      "target_root": "codex",
+      "target": "AGENTS.md",
+      "platforms": ["windows", "macos"],
+      "required_on_collect": false
+    },
+    {
+      "source": "portable/portable-memory.md",
+      "target_root": "codex",
+      "target": "portable-memory.md",
+      "platforms": ["windows", "macos"],
+      "required_on_collect": false
+    }
+  ],
+  "personal_skills": {
+    "common": [],
+    "windows": [],
+    "macos": []
+  },
+  "agents": {
+    "common": [],
+    "windows": [],
+    "macos": []
+  }
+}

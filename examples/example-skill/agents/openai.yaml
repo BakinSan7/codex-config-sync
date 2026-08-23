@@ -1,0 +1,3 @@
+interface:
+  display_name: "Example Skill"
+  short_description: "Summarize supplied text into three factual bullets"

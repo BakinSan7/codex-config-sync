@@ -1,0 +1,34 @@
+# Secrets and device-local configuration
+.env
+.env.*
+!.env.example
+connections/targets.local.yaml
+config/local.*
+secrets/
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Generated state
+backups/
+reports/
+.codex-sync/
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+
+# Local-only overlays and review material
+config/*.local.json
+portable/*.local.md
+*.plan.json
+security_best_practices_report.md

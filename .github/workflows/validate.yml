@@ -1,0 +1,66 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python 3.11
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Run public safety audit
+        run: python scripts/codex_config_sync.py doctor --platform ${{ runner.os == 'Windows' && 'windows' || 'macos' }} --public-audit
+
+      - name: Smoke-test Windows wrapper
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:CODEX_HOME = Join-Path $env:RUNNER_TEMP 'codex-config-sync-codex'
+          $env:AGENTS_HOME = Join-Path $env:RUNNER_TEMP 'codex-config-sync-agents'
+          .\codex-sync.ps1 doctor --public-audit
+          .\codex-sync.ps1 plan --direction to-device
+          .\codex-sync.ps1 apply
+          .\codex-sync.ps1 verify
+
+      - name: Smoke-test macOS wrapper
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          export CODEX_HOME="$RUNNER_TEMP/codex-config-sync-codex"
+          export AGENTS_HOME="$RUNNER_TEMP/codex-config-sync-agents"
+          ./codex-sync.sh doctor --public-audit
+          ./codex-sync.sh plan --direction to-device
+          ./codex-sync.sh apply
+          ./codex-sync.sh verify
+
+      - name: Check whitespace errors
+        run: git diff --check
