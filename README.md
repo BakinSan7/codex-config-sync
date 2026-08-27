@@ -5,7 +5,7 @@
 [![Windows and macOS](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](#requirements)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Safely sync a reviewed subset of your Codex `AGENTS.md`, personal skills, custom agents, portable memory, and selected `config.toml` values across Windows and macOS.**
+**Safely sync a reviewed subset of your Codex `AGENTS.md`, personal skills, custom agents, portable memory, and selected `config.toml` values across Windows and macOS — and, under the same safety rules, your Claude Code `CLAUDE.md`, skills, subagents, and selected `settings.json` values.**
 
 [Русская версия](README.ru.md)
 
@@ -106,7 +106,13 @@ If either the repository or the local target changes after planning, `apply` ref
 | Personal skills you own | Empty | Add a directory and list it in the manifest |
 | Custom agent TOML files | Empty | Add a file and list it in the manifest |
 | Stable `config.toml` values | Empty | Add reviewed keys to `config/*.json` |
+| Claude Code global `CLAUDE.md` | Included example | Edit `portable/CLAUDE.md` |
+| Claude Code skills you own | Empty | Add a directory to `claude-skills/` and list it in `claude_skills` |
+| Claude Code subagent `.md` files | Empty | Add a file to `claude-agents/` and list it in `claude_agents` |
+| Stable Claude `settings.json` values | Empty | Add reviewed keys to `config/claude-*.json` |
 | OS-specific content | Empty | Use the `windows` or `macos` manifest profile |
+
+Claude Code targets resolve against `$CLAUDE_HOME`: the `CLAUDE_CONFIG_DIR` environment variable when it is set, `~/.claude` otherwise. Codex is not required to sync only Claude Code, and vice versa.
 
 See [Configuration](docs/CONFIGURATION.md) for examples.
 
@@ -120,7 +126,10 @@ See [Configuration](docs/CONFIGURATION.md) for examples.
 - MCP commands, environment variables, credentials, and local runtime paths;
 - `auth.json`, tokens, cookies, SSH keys, and password-manager data;
 - chats, sessions, generated memory, logs, caches, backups, and attachments;
-- third-party skills and their executable dependencies.
+- third-party skills and their executable dependencies;
+- for Claude Code: `.credentials.json`, `~/.claude.json`, the `env`, `apiKeyHelper` and other
+  credential helpers, `hooks` and `statusLine` commands, plugin and MCP state, projects,
+  todos, shell snapshots, and auto-generated memory.
 
 These boundaries are enforced for known sensitive `config.toml` sections, not merely documented. See [Portability policy](docs/PORTABILITY.md).
 

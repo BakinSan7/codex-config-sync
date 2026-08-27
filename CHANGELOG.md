@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+### Added
+
+- Claude Code support under the same two-phase safety rules: a managed `$CLAUDE_HOME` root
+  (`CLAUDE_CONFIG_DIR` or `~/.claude`), the portable `portable/CLAUDE.md` example, owned
+  skills in `claude-skills/` via the `claude_skills` manifest table, subagent `.md` files in
+  `claude-agents/` via `claude_agents`, and reviewed `settings.json` dot-path values in
+  `config/claude-*.json` with enforced local-only keys (`env`, credential helpers, `hooks`,
+  `statusLine`, account state, secret-like names).
+- `--claude-home` CLI option; plans, backups, and rollback cover the Claude root, and a
+  Claude-only plan keeps its backup under `$CLAUDE_HOME/backups`.
+- `.credentials.json` joined the forbidden sensitive filenames for every managed surface.
+
 ## [0.1.0] - 2026-08-23
 
 ### Added

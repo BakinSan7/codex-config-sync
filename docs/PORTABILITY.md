@@ -22,7 +22,17 @@ The tool refuses known machine or security state rather than merely warning abou
 - desktop font, reasoning, notification, hotkey, remote-control, and window-size settings;
 - secret-like configuration key names.
 
-Unknown future Codex settings are not automatically safe. The user must opt in and review current official documentation.
+For Claude Code `settings.json`, the same rule refuses:
+
+- `env` and every credential helper: `apiKeyHelper`, `awsAuthRefresh`, `awsCredentialExport`,
+  `otelHeadersHelper`;
+- commands the terminal executes: `hooks` and `statusLine`;
+- account state: `forceLoginMethod`, `forceLoginOrgUUID`, `oauthAccount`;
+- secret-like key names anywhere in a settings path;
+- `.credentials.json` and `~/.claude.json` as files: they hold tokens, project trust, and
+  device history, and can never be listed as portable files.
+
+Unknown future Codex or Claude Code settings are not automatically safe. The user must opt in and review current official documentation.
 
 ## Why plugins and MCP stay local
 

@@ -47,7 +47,7 @@ TEXT_SUFFIXES = {
     ".yaml",
     ".yml",
 }
-TEXT_NAMES = {".gitattributes", ".gitignore", "AGENTS.md", "LICENSE"}
+TEXT_NAMES = {".gitattributes", ".gitignore", "AGENTS.md", "CLAUDE.md", "LICENSE"}
 SCAN_SKIP_DIRS = {
     ".git",
     ".codex-sync",
@@ -58,6 +58,7 @@ SCAN_SKIP_DIRS = {
 }
 TREE_SKIP_DIRS = SCAN_SKIP_DIRS
 FORBIDDEN_FILE_NAMES = {
+    ".credentials.json",
     "auth.json",
     "cookies.json",
     "credentials.json",
@@ -77,6 +78,22 @@ FORBIDDEN_FILE_SUFFIXES = (".key", ".p12", ".pem", ".pfx", ".sqlite", ".sqlite3"
 WINDOWS_RESERVED_DEVICE_NAMES = {"AUX", "CLOCK$", "CON", "CONIN$", "CONOUT$", "NUL", "PRN"}
 RESERVED_CODEX_TARGETS = {"agents", "backups", "config.toml", "skills"}
 RESERVED_AGENTS_TARGETS = {"skills"}
+RESERVED_CLAUDE_TARGETS = {
+    "agents",
+    "backups",
+    "plugins",
+    "projects",
+    "settings.json",
+    "shell-snapshots",
+    "skills",
+    "statsig",
+    "todos",
+}
+RESERVED_TARGETS_BY_ROOT = {
+    "agents": RESERVED_AGENTS_TARGETS,
+    "claude": RESERVED_CLAUDE_TARGETS,
+    "codex": RESERVED_CODEX_TARGETS,
+}
 
 # Deliberately local-only. The project syncs behavior, not device security or runtime state.
 LOCAL_ONLY_ROOT_KEYS = {
@@ -108,6 +125,20 @@ LOCAL_ONLY_DESKTOP_FRAGMENTS = {
     "reasoning",
     "remotecontrol",
     "windowsize",
+}
+# Claude Code settings.json values that never travel: environment variables,
+# credential helpers, commands the terminal executes, and account state.
+LOCAL_ONLY_CLAUDE_ROOT_KEYS = {
+    "apiKeyHelper",
+    "awsAuthRefresh",
+    "awsCredentialExport",
+    "env",
+    "forceLoginMethod",
+    "forceLoginOrgUUID",
+    "hooks",
+    "oauthAccount",
+    "otelHeadersHelper",
+    "statusLine",
 }
 
 KNOWN_TOKEN_PATTERNS = [
@@ -165,6 +196,11 @@ def default_codex_home() -> pathlib.Path:
 def default_agents_home() -> pathlib.Path:
     configured = os.environ.get("AGENTS_HOME")
     return pathlib.Path(configured).expanduser() if configured else pathlib.Path.home() / ".agents"
+
+
+def default_claude_home() -> pathlib.Path:
+    configured = os.environ.get("CLAUDE_CONFIG_DIR")
+    return pathlib.Path(configured).expanduser() if configured else pathlib.Path.home() / ".claude"
 
 
 def detect_platform(explicit: str | None) -> str:
@@ -295,8 +331,7 @@ def reject_sensitive_path(relative: pathlib.PurePosixPath, label: str) -> None:
 
 def reject_reserved_target(target_root: str, relative: pathlib.PurePosixPath) -> None:
     first = relative.parts[0].lower()
-    reserved = RESERVED_CODEX_TARGETS if target_root == "codex" else RESERVED_AGENTS_TARGETS
-    if first in reserved:
+    if first in RESERVED_TARGETS_BY_ROOT[target_root]:
         raise ValueError(
             f"portable_files cannot manage reserved {target_root} target: {relative.as_posix()}"
         )
@@ -608,7 +643,7 @@ def load_manifest(repo_root: pathlib.Path) -> dict[str, Any]:
         reject_sensitive_path(source, f"portable_files[{index}].source")
         reject_sensitive_path(target, f"portable_files[{index}].target")
         target_root = item.get("target_root")
-        if target_root not in {"codex", "agents"}:
+        if target_root not in {"codex", "agents", "claude"}:
             raise ValueError(f"Invalid target_root in portable_files[{index}]: {target_root!r}")
         reject_reserved_target(target_root, target)
         platforms = item.get("platforms")
@@ -626,7 +661,7 @@ def load_manifest(repo_root: pathlib.Path) -> dict[str, Any]:
         if duplicate_key in seen_targets:
             raise ValueError(f"Duplicate portable target: {target_root}/{target}")
         seen_targets.add(duplicate_key)
-    for key in ("personal_skills", "agents"):
+    for key in ("personal_skills", "agents", "claude_skills", "claude_agents"):
         table = manifest.get(key, {})
         if not isinstance(table, dict):
             raise ValueError(f"{key} must be an object")
@@ -640,6 +675,8 @@ def load_manifest(repo_root: pathlib.Path) -> dict[str, Any]:
                 validate_component(entry, f"{key}.{profile} entry")
                 if key == "agents" and not entry.endswith(".toml"):
                     raise ValueError(f"Agent definition must use a .toml file: {entry!r}")
+                if key == "claude_agents" and not entry.endswith(".md"):
+                    raise ValueError(f"Claude agent definition must use a .md file: {entry!r}")
     return manifest
 
 
@@ -660,7 +697,12 @@ def profile_entries(manifest: dict[str, Any], key: str, platform: str) -> list[s
 
 
 def roots_for(args: argparse.Namespace) -> dict[str, pathlib.Path]:
-    return {"repo": args.repo_root, "codex": args.codex_home, "agents": args.agents_home}
+    return {
+        "repo": args.repo_root,
+        "codex": args.codex_home,
+        "agents": args.agents_home,
+        "claude": args.claude_home,
+    }
 
 
 def validate_managed_roots(args: argparse.Namespace) -> None:
@@ -675,7 +717,12 @@ def validate_managed_roots(args: argparse.Namespace) -> None:
 
 
 def display_path(scope: str, relative: pathlib.PurePosixPath) -> str:
-    labels = {"repo": "$REPO", "codex": "$CODEX_HOME", "agents": "$AGENTS_HOME"}
+    labels = {
+        "repo": "$REPO",
+        "codex": "$CODEX_HOME",
+        "agents": "$AGENTS_HOME",
+        "claude": "$CLAUDE_HOME",
+    }
     return f"{labels[scope]}/{relative.as_posix()}"
 
 
@@ -826,6 +873,69 @@ def build_file_specs(args: argparse.Namespace, direction: str, result: Result) -
             required=required,
         )
 
+    for name in profile_entries(manifest, "claude_agents", args.platform):
+        repo_relative = pathlib.PurePosixPath("claude-agents") / name
+        live_relative = pathlib.PurePosixPath("agents") / name
+        repo_path = safe_join(args.repo_root, repo_relative, "Claude agent source")
+        live_path = safe_join(args.claude_home, live_relative, "Claude agent target")
+        if direction == "to-device":
+            source, target, source_scope, target_scope = repo_path, live_path, "repo", "claude"
+            required = True
+        else:
+            source, target, source_scope, target_scope = live_path, repo_path, "claude", "repo"
+            required = False
+        add_file_spec(
+            specs,
+            result,
+            source=source,
+            source_display=display_path(
+                source_scope, repo_relative if source_scope == "repo" else live_relative
+            ),
+            target=target,
+            target_scope=target_scope,
+            target_relative=repo_relative if target_scope == "repo" else live_relative,
+            required=required,
+        )
+
+    for name in profile_entries(manifest, "claude_skills", args.platform):
+        repo_relative = pathlib.PurePosixPath("claude-skills") / name
+        live_relative = pathlib.PurePosixPath("skills") / name
+        repo_path = safe_join(args.repo_root, repo_relative, "Claude skill source")
+        live_path = safe_join(args.claude_home, live_relative, "Claude skill target")
+        if direction == "to-device":
+            source_root, tree_target_root = repo_path, args.claude_home
+            source_display, target_scope, target_relative = (
+                display_path("repo", repo_relative),
+                "claude",
+                live_relative,
+            )
+            required = True
+        else:
+            source_root, tree_target_root = live_path, args.repo_root
+            source_display, target_scope, target_relative = (
+                display_path("claude", live_relative),
+                "repo",
+                repo_relative,
+            )
+            required = False
+        if lexical_exists(source_root):
+            try:
+                marker = safe_join(source_root, "SKILL.md", "Claude skill marker")
+                require_regular_file(marker, "Claude skill SKILL.md")
+            except (OSError, ValueError) as exc:
+                result.errors.append(str(exc))
+                continue
+        add_tree_specs(
+            specs,
+            result,
+            source_root=source_root,
+            source_display=source_display,
+            target_root=tree_target_root,
+            target_scope=target_scope,
+            target_relative_root=target_relative,
+            required=required,
+        )
+
     for name in profile_entries(manifest, "personal_skills", args.platform):
         repo_relative = pathlib.PurePosixPath("personal-skills") / name
         live_relative = pathlib.PurePosixPath("skills") / name
@@ -943,11 +1053,175 @@ def build_config_specs(args: argparse.Namespace, direction: str, result: Result)
     return specs
 
 
+def validate_claude_settings_path(path_expression: str) -> list[str]:
+    if not isinstance(path_expression, str) or not path_expression:
+        raise ValueError(f"Claude settings path must be a non-empty string: {path_expression!r}")
+    segments = path_expression.split(".")
+    for segment in segments:
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", segment):
+            raise ValueError(f"Unsafe Claude settings path: {path_expression!r}")
+    if segments[0] in LOCAL_ONLY_CLAUDE_ROOT_KEYS:
+        raise ValueError(f"Local-only Claude settings key is forbidden: {path_expression}")
+    for segment in segments:
+        if re.search(
+            r"(?i)(password|passwd|token|api[_-]?key|client[_-]?secret|private[_-]?key)", segment
+        ):
+            raise ValueError(f"Secret-like Claude settings key is forbidden: {path_expression}")
+    return segments
+
+
+def load_claude_settings_profile(path: pathlib.Path) -> dict[str, Any]:
+    """One optional profile file: {"values": {"dot.path": <JSON value>}}."""
+    if not lexical_exists(path):
+        return {"values": {}}
+    payload = load_json(path)
+    values = payload.get("values", {})
+    if not isinstance(values, dict):
+        raise ValueError(f"values must be an object: {path}")
+    for path_expression in values:
+        validate_claude_settings_path(path_expression)
+    return payload
+
+
+def expected_claude_values(repo_root: pathlib.Path, platform: str) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for filename in ("claude-common.json", f"claude-{platform}.json"):
+        path = safe_join(repo_root, f"config/{filename}", "Claude settings profile")
+        merged.update(load_claude_settings_profile(path).get("values", {}))
+    return merged
+
+
+def claude_settings_get(document: dict[str, Any], segments: list[str]) -> tuple[bool, Any]:
+    current: Any = document
+    for segment in segments:
+        if not isinstance(current, dict) or segment not in current:
+            return False, None
+        current = current[segment]
+    return True, current
+
+
+def claude_settings_set(
+    document: dict[str, Any], segments: list[str], value: Any, path_expression: str
+) -> None:
+    current = document
+    for segment in segments[:-1]:
+        node = current.get(segment)
+        if node is None:
+            node = {}
+            current[segment] = node
+        elif not isinstance(node, dict):
+            raise ValueError(
+                f"Claude settings path crosses a non-object value: {path_expression}"
+            )
+        current = node
+    current[segments[-1]] = value
+
+
+def build_claude_settings_specs(
+    args: argparse.Namespace, direction: str, result: Result
+) -> list[WriteSpec]:
+    values = expected_claude_values(args.repo_root, args.platform)
+    if not values:
+        result.ok.append("claude-settings:no-portable-keys-selected")
+        return []
+    settings_relative = pathlib.PurePosixPath("settings.json")
+    settings_path = safe_join(args.claude_home, settings_relative, "Claude settings")
+    if lexical_exists(settings_path):
+        try:
+            require_regular_file(settings_path, "Claude settings")
+        except (OSError, ValueError) as exc:
+            result.errors.append(str(exc))
+            return []
+
+    if direction == "to-device":
+        document: dict[str, Any] = {}
+        if lexical_exists(settings_path):
+            try:
+                loaded = json.loads(settings_path.read_text(encoding="utf-8-sig"))
+            except (OSError, json.JSONDecodeError) as exc:
+                result.errors.append(f"Cannot read $CLAUDE_HOME/settings.json: {exc}")
+                return []
+            if not isinstance(loaded, dict):
+                result.errors.append("$CLAUDE_HOME/settings.json must contain a JSON object")
+                return []
+            document = loaded
+        try:
+            for path_expression in sorted(values):
+                segments = validate_claude_settings_path(path_expression)
+                claude_settings_set(document, segments, values[path_expression], path_expression)
+        except ValueError as exc:
+            result.errors.append(str(exc))
+            return []
+        content = (
+            json.dumps(document, ensure_ascii=False, indent=2).encode("utf-8") + b"\n"
+        )
+        return [
+            WriteSpec(
+                key="claude:settings.json",
+                source_display="$REPO/config/claude-{common,platform}.json",
+                target_display="$CLAUDE_HOME/settings.json",
+                target_scope="claude",
+                target_relative=settings_relative,
+                target=settings_path,
+                content=content,
+            )
+        ]
+
+    if not lexical_exists(settings_path):
+        result.warnings.append(
+            "Local Claude settings are missing; portable Claude profiles were preserved"
+        )
+        return []
+    try:
+        loaded = json.loads(settings_path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        result.errors.append(f"Cannot read local Claude settings: {exc}")
+        return []
+    if not isinstance(loaded, dict):
+        result.errors.append("$CLAUDE_HOME/settings.json must contain a JSON object")
+        return []
+    specs: list[WriteSpec] = []
+    for filename in ("claude-common.json", f"claude-{args.platform}.json"):
+        relative = pathlib.PurePosixPath("config") / filename
+        target = safe_join(args.repo_root, relative, "Claude settings profile")
+        if not lexical_exists(target):
+            continue
+        payload = load_claude_settings_profile(target)
+        profile_values = payload.get("values", {})
+        changed = False
+        for path_expression in list(profile_values):
+            segments = validate_claude_settings_path(path_expression)
+            found, local_value = claude_settings_get(loaded, segments)
+            if not found:
+                result.warnings.append(
+                    f"Local Claude settings key missing; profile preserved: {path_expression}"
+                )
+                continue
+            if profile_values[path_expression] != local_value:
+                profile_values[path_expression] = local_value
+                changed = True
+        if changed:
+            content = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8") + b"\n"
+            specs.append(
+                WriteSpec(
+                    key=f"repo:{relative.as_posix()}",
+                    source_display="$CLAUDE_HOME/settings.json (selected keys only)",
+                    target_display=display_path("repo", relative),
+                    target_scope="repo",
+                    target_relative=relative,
+                    target=target,
+                    content=content,
+                )
+            )
+    return specs
+
+
 def build_specs(args: argparse.Namespace, direction: str, result: Result) -> list[WriteSpec]:
     try:
         validate_managed_roots(args)
         specs = build_file_specs(args, direction, result)
         specs.extend(build_config_specs(args, direction, result))
+        specs.extend(build_claude_settings_specs(args, direction, result))
     except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
         result.errors.append(str(exc))
         return []
@@ -993,6 +1267,7 @@ def plan_payload(
         "repo_root": str(args.repo_root),
         "codex_home": str(args.codex_home),
         "agents_home": str(args.agents_home),
+        "claude_home": str(args.claude_home),
         "operations": operations,
     }
 
@@ -1113,12 +1388,15 @@ def plan_command(args: argparse.Namespace) -> Result:
 
 
 def backup_root_for(
-    args: argparse.Namespace, direction: str, plan_id: str
+    args: argparse.Namespace, direction: str, plan_id: str, target_scopes: set[str]
 ) -> tuple[pathlib.Path, str, pathlib.PurePosixPath]:
     stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S")
     name = f"codex-config-sync-{stamp}-{plan_id[:8]}"
     if direction == "to-device":
         relative = pathlib.PurePosixPath("backups") / name
+        # A Claude-only plan must not create ~/.codex just to hold its backup.
+        if target_scopes and target_scopes <= {"claude"}:
+            return safe_join(args.claude_home, relative, "backup root"), "claude", relative
         return safe_join(args.codex_home, relative, "backup root"), "codex", relative
     relative = pathlib.PurePosixPath(".codex-sync/backups") / name
     return safe_join(args.repo_root, relative, "backup root"), "repo", relative
@@ -1127,10 +1405,11 @@ def backup_root_for(
 def create_backup(
     args: argparse.Namespace, direction: str, plan: dict[str, Any], specs: list[WriteSpec]
 ) -> pathlib.Path:
-    root, _, _ = backup_root_for(args, direction, plan["plan_id"])
+    operation_keys = {item["key"] for item in plan["operations"]}
+    target_scopes = {spec.target_scope for spec in specs if spec.key in operation_keys}
+    root, _, _ = backup_root_for(args, direction, plan["plan_id"], target_scopes)
     root.mkdir(parents=True, exist_ok=False)
     entries: list[dict[str, Any]] = []
-    operation_keys = {item["key"] for item in plan["operations"]}
     for spec in specs:
         if spec.key not in operation_keys:
             continue
@@ -1160,6 +1439,7 @@ def create_backup(
         "repo_root": str(args.repo_root),
         "codex_home": str(args.codex_home),
         "agents_home": str(args.agents_home),
+        "claude_home": str(args.claude_home),
         "entries": entries,
     }
     write_json_atomic(safe_join(root, "manifest.json", "backup manifest"), manifest)
@@ -1175,6 +1455,7 @@ def rollback_backup(
         root = backup_root.expanduser().absolute()
         allowed = [
             safe_join(args.codex_home, "backups", "backup parent").resolve(strict=False),
+            safe_join(args.claude_home, "backups", "backup parent").resolve(strict=False),
             safe_join(args.repo_root, ".codex-sync/backups", "backup parent").resolve(strict=False),
         ]
         resolved = root.resolve(strict=True)
@@ -1362,8 +1643,14 @@ def doctor_command(args: argparse.Namespace) -> Result:
         validate_managed_roots(args)
         load_manifest(args.repo_root)
         expected_sections(args.repo_root, args.platform)
+        expected_claude_values(args.repo_root, args.platform)
         result.ok.extend(
-            ["manifest-schema", "portable-config-profiles", f"platform:{args.platform}"]
+            [
+                "manifest-schema",
+                "portable-config-profiles",
+                "portable-claude-settings-profiles",
+                f"platform:{args.platform}",
+            ]
         )
     except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
         result.errors.append(str(exc))
@@ -1411,6 +1698,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repo-root", type=pathlib.Path, default=repo_root_from_script())
     parser.add_argument("--codex-home", type=pathlib.Path, default=default_codex_home())
     parser.add_argument("--agents-home", type=pathlib.Path, default=default_agents_home())
+    parser.add_argument("--claude-home", type=pathlib.Path, default=default_claude_home())
     parser.add_argument("--platform", choices=("windows", "macos"))
     parser.add_argument("--direction", choices=("to-device", "from-device"), default="to-device")
     parser.add_argument("--show-diff", action="store_true")
@@ -1427,6 +1715,7 @@ def main() -> int:
     args.repo_root = args.repo_root.expanduser().absolute()
     args.codex_home = args.codex_home.expanduser().absolute()
     args.agents_home = args.agents_home.expanduser().absolute()
+    args.claude_home = args.claude_home.expanduser().absolute()
     try:
         args.platform = detect_platform(args.platform)
         if args.command == "doctor":

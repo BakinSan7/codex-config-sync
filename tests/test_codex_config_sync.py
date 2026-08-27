@@ -28,7 +28,13 @@ def write_json(path: pathlib.Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def manifest(*, skills: dict | None = None, agents: dict | None = None) -> dict:
+def manifest(
+    *,
+    skills: dict | None = None,
+    agents: dict | None = None,
+    claude_skills: dict | None = None,
+    claude_agents: dict | None = None,
+) -> dict:
     return {
         "schema_version": 1,
         "portable_files": [
@@ -46,9 +52,18 @@ def manifest(*, skills: dict | None = None, agents: dict | None = None) -> dict:
                 "platforms": ["windows", "macos"],
                 "required_on_collect": False,
             },
+            {
+                "source": "portable/CLAUDE.md",
+                "target_root": "claude",
+                "target": "CLAUDE.md",
+                "platforms": ["windows", "macos"],
+                "required_on_collect": False,
+            },
         ],
         "personal_skills": skills or {"common": [], "windows": [], "macos": []},
         "agents": agents or {"common": [], "windows": [], "macos": []},
+        "claude_skills": claude_skills or {"common": [], "windows": [], "macos": []},
+        "claude_agents": claude_agents or {"common": [], "windows": [], "macos": []},
     }
 
 
@@ -60,12 +75,18 @@ def make_repo(
     (root / "agents").mkdir()
     (root / "config").mkdir()
     (root / "manifests").mkdir()
+    (root / "claude-agents").mkdir()
+    (root / "claude-skills").mkdir()
     (root / "portable" / "AGENTS.md").write_text("portable instructions\n", encoding="utf-8")
     (root / "portable" / "portable-memory.md").write_text("portable memory\n", encoding="utf-8")
+    (root / "portable" / "CLAUDE.md").write_text("portable claude instructions\n", encoding="utf-8")
     write_json(root / "manifests" / "portable-files.json", custom_manifest or manifest())
     write_json(root / "config" / "common.json", config or {"sections": {}})
     write_json(root / "config" / "windows.json", {"sections": {}})
     write_json(root / "config" / "macos.json", {"sections": {}})
+    write_json(root / "config" / "claude-common.json", {"values": {}})
+    write_json(root / "config" / "claude-windows.json", {"values": {}})
+    write_json(root / "config" / "claude-macos.json", {"values": {}})
 
 
 def args_for(
@@ -73,6 +94,7 @@ def args_for(
     codex_home: pathlib.Path,
     agents_home: pathlib.Path,
     *,
+    claude_home: pathlib.Path | None = None,
     platform: str = "windows",
     direction: str = "to-device",
     public_audit: bool = False,
@@ -82,6 +104,7 @@ def args_for(
         repo_root=repo.absolute(),
         codex_home=codex_home.absolute(),
         agents_home=agents_home.absolute(),
+        claude_home=(claude_home or codex_home.parent / ".claude").absolute(),
         platform=platform,
         direction=direction,
         show_diff=False,
@@ -561,6 +584,163 @@ class PlanApplyTests(unittest.TestCase):
         )
         result = sync.doctor_command(self.args)
         self.assertTrue(any("Unsupported portable TOML value" in error for error in result.errors))
+
+
+class ClaudeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = pathlib.Path(self.temporary.name)
+        self.repo = self.root / "repo"
+        self.codex = self.root / ".codex"
+        self.agents = self.root / ".agents"
+        self.claude = self.root / ".claude"
+        make_repo(self.repo)
+        self.codex.mkdir()
+        self.agents.mkdir()
+        self.claude.mkdir()
+        self.args = args_for(self.repo, self.codex, self.agents, claude_home=self.claude)
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def test_claude_surfaces_apply_and_verify(self) -> None:
+        write_json(
+            self.repo / "manifests" / "portable-files.json",
+            manifest(
+                claude_skills={"common": ["notes"], "windows": [], "macos": []},
+                claude_agents={"common": ["reviewer.md"], "windows": [], "macos": []},
+            ),
+        )
+        (self.repo / "claude-agents" / "reviewer.md").write_text(
+            "---\nname: reviewer\n---\nreview things\n", encoding="utf-8"
+        )
+        skill = self.repo / "claude-skills" / "notes"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("---\nname: notes\n---\nkeep notes\n", encoding="utf-8")
+        write_json(
+            self.repo / "config" / "claude-common.json",
+            {"values": {"includeCoAuthoredBy": False, "permissions.defaultMode": "plan"}},
+        )
+        (self.claude / "settings.json").write_text(
+            json.dumps({"env": {"LOCAL_ONLY": "yes"}, "model": "opus"}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        planned = quiet_plan(self.args)
+        self.assertFalse(planned.errors)
+        applied = sync.apply_command(self.args)
+        self.assertFalse(applied.errors)
+        self.assertEqual(
+            (self.claude / "CLAUDE.md").read_text(encoding="utf-8"),
+            "portable claude instructions\n",
+        )
+        self.assertTrue((self.claude / "agents" / "reviewer.md").exists())
+        self.assertTrue((self.claude / "skills" / "notes" / "SKILL.md").exists())
+        settings = json.loads((self.claude / "settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(settings["env"], {"LOCAL_ONLY": "yes"})
+        self.assertEqual(settings["model"], "opus")
+        self.assertIs(settings["includeCoAuthoredBy"], False)
+        self.assertEqual(settings["permissions"]["defaultMode"], "plan")
+        verified = sync.verify_command(self.args)
+        self.assertFalse(verified.errors)
+
+    def test_claude_settings_readback_from_device(self) -> None:
+        write_json(
+            self.repo / "config" / "claude-common.json",
+            {"values": {"includeCoAuthoredBy": False, "permissions.defaultMode": "plan"}},
+        )
+        local_settings = {
+            "includeCoAuthoredBy": True,
+            "permissions": {"defaultMode": "acceptEdits"},
+        }
+        (self.claude / "settings.json").write_text(
+            json.dumps(local_settings) + "\n", encoding="utf-8"
+        )
+        collect_args = args_for(
+            self.repo,
+            self.codex,
+            self.agents,
+            claude_home=self.claude,
+            direction="from-device",
+        )
+        planned = quiet_plan(collect_args)
+        self.assertFalse(planned.errors)
+        applied = sync.apply_command(collect_args)
+        self.assertFalse(applied.errors)
+        payload = json.loads(
+            (self.repo / "config" / "claude-common.json").read_text(encoding="utf-8")
+        )
+        self.assertIs(payload["values"]["includeCoAuthoredBy"], True)
+        self.assertEqual(payload["values"]["permissions.defaultMode"], "acceptEdits")
+
+    def test_local_only_claude_keys_are_rejected(self) -> None:
+        for path_expression in (
+            "env",
+            "env.ANTHROPIC_MODEL",
+            "apiKeyHelper",
+            "hooks",
+            "statusLine",
+        ):
+            with self.assertRaisesRegex(ValueError, "Local-only"):
+                sync.validate_claude_settings_path(path_expression)
+
+    def test_secret_like_claude_key_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Secret-like"):
+            sync.validate_claude_settings_path("integrations.myApiKey")
+
+    def test_claude_settings_path_crossing_scalar_fails(self) -> None:
+        write_json(
+            self.repo / "config" / "claude-common.json",
+            {"values": {"permissions.defaultMode": "plan"}},
+        )
+        (self.claude / "settings.json").write_text(
+            json.dumps({"permissions": "broken"}) + "\n", encoding="utf-8"
+        )
+        planned = quiet_plan(self.args)
+        self.assertTrue(any("non-object" in error for error in planned.errors))
+
+    def test_claude_agent_requires_md_extension(self) -> None:
+        write_json(
+            self.repo / "manifests" / "portable-files.json",
+            manifest(claude_agents={"common": ["helper.txt"], "windows": [], "macos": []}),
+        )
+        with self.assertRaisesRegex(ValueError, r"\.md"):
+            sync.load_manifest(self.repo)
+
+    def test_reserved_claude_target_is_rejected(self) -> None:
+        configured = manifest()
+        configured["portable_files"][2]["target"] = "settings.json"
+        write_json(self.repo / "manifests" / "portable-files.json", configured)
+        with self.assertRaisesRegex(ValueError, "reserved claude target"):
+            sync.load_manifest(self.repo)
+
+    def test_claude_credentials_filename_is_sensitive(self) -> None:
+        self.assertEqual(
+            sync.sensitive_path_reason(pathlib.PurePosixPath(".credentials.json")),
+            "sensitive filename",
+        )
+
+    def test_claude_only_backup_lives_under_claude_home(self) -> None:
+        configured = manifest()
+        configured["portable_files"] = [configured["portable_files"][2]]
+        write_json(self.repo / "manifests" / "portable-files.json", configured)
+        planned = quiet_plan(self.args)
+        self.assertFalse(planned.errors)
+        applied = sync.apply_command(self.args)
+        self.assertFalse(applied.errors)
+        assert applied.backup_root
+        self.assertTrue(
+            str(applied.backup_root).startswith(str(self.claude)),
+            f"backup landed outside the Claude home: {applied.backup_root}",
+        )
+        self.assertFalse((self.codex / "backups").exists())
+
+    def test_missing_claude_profiles_are_optional(self) -> None:
+        for filename in ("claude-common.json", "claude-windows.json", "claude-macos.json"):
+            (self.repo / "config" / filename).unlink()
+        doctor = sync.doctor_command(self.args)
+        self.assertFalse(doctor.errors)
+        planned = quiet_plan(self.args)
+        self.assertFalse(planned.errors)
 
 
 class ScannerTests(unittest.TestCase):

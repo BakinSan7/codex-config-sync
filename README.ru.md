@@ -1,6 +1,6 @@
 # Codex Config Sync
 
-**Безопасная синхронизация выбранных настроек Codex между Windows и macOS: `AGENTS.md`, личных skills, собственных агентов, переносимой заметки памяти и явно разрешённых значений `config.toml`.**
+**Безопасная синхронизация выбранных настроек Codex между Windows и macOS: `AGENTS.md`, личных skills, собственных агентов, переносимой заметки памяти и явно разрешённых значений `config.toml` — а также, по тем же правилам безопасности, `CLAUDE.md`, skills, субагентов и явно разрешённых значений `settings.json` для Claude Code.**
 
 [English README](README.md)
 
@@ -64,7 +64,14 @@ git diff
 - `portable/portable-memory.md`;
 - только перечисленные в manifest личные skills и агенты;
 - только заранее перечисленные значения `config.toml`;
+- для Claude Code: `portable/CLAUDE.md`, перечисленные в manifest skills
+  (`claude_skills`) и субагенты (`claude_agents`), а также явно разрешённые значения
+  `settings.json` из `config/claude-*.json`;
 - OS-specific компоненты только на соответствующей системе.
+
+Цели Claude Code разрешаются относительно `$CLAUDE_HOME`: переменная окружения
+`CLAUDE_CONFIG_DIR`, если задана, иначе `~/.claude`. Для синхронизации только Claude Code
+установленный Codex не требуется, и наоборот.
 
 По умолчанию списки skills, агентов и настроек пусты. Пользователь сам выбирает переносимую поверхность — см. [настройку](docs/CONFIGURATION.md).
 
@@ -76,7 +83,10 @@ git diff
 - plugin/MCP IDs, команды, кэши, OAuth и авторизация;
 - токены, cookies, SSH-ключи и password-manager data;
 - чаты, полная память, sessions, логи, кэши, backups и вложения;
-- сторонние skills и их исполняемые зависимости.
+- сторонние skills и их исполняемые зависимости;
+- для Claude Code: `.credentials.json`, `~/.claude.json`, `env`, `apiKeyHelper` и другие
+  credential-хелперы, команды `hooks` и `statusLine`, состояние плагинов и MCP, projects,
+  todos, shell snapshots и автоматически создаваемая память.
 
 ## Важные ограничения
 

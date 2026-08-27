@@ -17,11 +17,13 @@ The repository is intentionally useful but nearly empty by default. Your private
 ```
 
 - `source` is relative to the repository.
-- `target_root` is `codex` or `agents`.
-- `target` is relative to that local root.
+- `target_root` is `codex`, `agents`, or `claude`.
+- `target` is relative to that local root. The `claude` root is `$CLAUDE_HOME`: the
+  `CLAUDE_CONFIG_DIR` environment variable when set, `~/.claude` otherwise.
 - paths must use forward slashes and cannot contain `..`, drive letters, symlinks, or junctions.
-- sensitive files and reserved managed areas such as `config.toml`, `skills/`, `agents/`, and
-  `backups/` cannot be reached through `portable_files`; use their dedicated allowlists.
+- sensitive files and reserved managed areas such as `config.toml`, `settings.json`, `skills/`,
+  `agents/`, and `backups/` cannot be reached through `portable_files`; use their dedicated
+  allowlists.
 
 ## Personal skills
 
@@ -78,6 +80,40 @@ The tool updates only listed keys and preserves unrelated TOML values and commen
 Known local-only roots and sections are rejected, including reasoning effort, sandbox and approval policy, plugins, MCP servers, projects, providers, profiles, subagent runtime, Windows sandbox, telemetry, notifications, font sizes, and hotkeys.
 
 Before adding a key, check OpenAI's current [`config.toml` reference](https://learn.chatgpt.com/docs/config-file/config-reference).
+
+## Claude Code
+
+The same manifest and the same safety rules cover Claude Code:
+
+- `portable/CLAUDE.md` installs to `$CLAUDE_HOME/CLAUDE.md` through the default
+  `portable_files` entry.
+- Skills you own go to `claude-skills/<name>/` with a `SKILL.md` marker and are listed in the
+  `claude_skills` table. They install to `$CLAUDE_HOME/skills/<name>/`.
+- Subagent definitions go to `claude-agents/<name>.md` and are listed in the `claude_agents`
+  table. They install to `$CLAUDE_HOME/agents/<name>.md`. See
+  `examples/example-claude-agent.md`.
+- Reviewed `settings.json` values live in `config/claude-common.json`,
+  `config/claude-windows.json`, and `config/claude-macos.json` as dot-path keys:
+
+```json
+{
+  "values": {
+    "includeCoAuthoredBy": false,
+    "permissions.defaultMode": "default"
+  }
+}
+```
+
+The tool updates only listed paths inside `$CLAUDE_HOME/settings.json` and preserves every
+other value. During `from-device`, it collects only paths that already exist in these JSON
+profiles. Known local-only roots are rejected outright: `env`, `apiKeyHelper`,
+`awsAuthRefresh`, `awsCredentialExport`, `otelHeadersHelper`, `hooks`, `statusLine`,
+`forceLoginMethod`, `forceLoginOrgUUID`, `oauthAccount`, and any secret-like key name.
+`hooks` and `statusLine` stay local because they are commands the terminal executes, usually
+with machine-specific paths.
+
+Before adding a key, check Anthropic's current
+[Claude Code settings reference](https://code.claude.com/docs/en/settings).
 
 ## Deletions
 

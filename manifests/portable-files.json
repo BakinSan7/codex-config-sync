@@ -14,6 +14,13 @@
       "target": "portable-memory.md",
       "platforms": ["windows", "macos"],
       "required_on_collect": false
+    },
+    {
+      "source": "portable/CLAUDE.md",
+      "target_root": "claude",
+      "target": "CLAUDE.md",
+      "platforms": ["windows", "macos"],
+      "required_on_collect": false
     }
   ],
   "personal_skills": {
@@ -22,6 +29,16 @@
     "macos": []
   },
   "agents": {
+    "common": [],
+    "windows": [],
+    "macos": []
+  },
+  "claude_skills": {
+    "common": [],
+    "windows": [],
+    "macos": []
+  },
+  "claude_agents": {
     "common": [],
     "windows": [],
     "macos": []

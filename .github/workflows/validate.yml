@@ -46,6 +46,7 @@ jobs:
         run: |
           $env:CODEX_HOME = Join-Path $env:RUNNER_TEMP 'codex-config-sync-codex'
           $env:AGENTS_HOME = Join-Path $env:RUNNER_TEMP 'codex-config-sync-agents'
+          $env:CLAUDE_CONFIG_DIR = Join-Path $env:RUNNER_TEMP 'codex-config-sync-claude'
           .\codex-sync.ps1 doctor --public-audit
           .\codex-sync.ps1 plan --direction to-device
           .\codex-sync.ps1 apply
@@ -57,6 +58,7 @@ jobs:
         run: |
           export CODEX_HOME="$RUNNER_TEMP/codex-config-sync-codex"
           export AGENTS_HOME="$RUNNER_TEMP/codex-config-sync-agents"
+          export CLAUDE_CONFIG_DIR="$RUNNER_TEMP/codex-config-sync-claude"
           ./codex-sync.sh doctor --public-audit
           ./codex-sync.sh plan --direction to-device
           ./codex-sync.sh apply
