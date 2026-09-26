@@ -28,6 +28,10 @@ Paths of the shared sources are set in `manifests/portable-files.json` (`instruc
 
 The helper `scripts/setup.py --repository owner/name` clones your repository into `~/codex-config-sync` (or `--destination`) and runs `bootstrap`.
 
+## One source per device
+
+The device remembers which repository its profile came from. If `preview`, `bootstrap` or `apply` runs from another repository (for example, the public template on a machine that uses your private copy), the scripts stop before planning anything, because the other repository would replace your instructions, memory and skills. Profiles installed before v0.2.0 are recognized by the clone path recorded in `portable-repo-path`. To switch sources on purpose, run the command again with `--switch-repository`; the next apply records the new repository.
+
 ## Choosing skills
 
 `catalog` lists every offered skill with a short explanation, the apps it supports, and for third-party skills the author and license. `--skills` accepts:

@@ -92,7 +92,7 @@ The `codex-config-sync` skill is always installed: it lets Codex and Claude Code
 | `scan [--public-audit]` | Looks for secrets, sensitive files and user paths | Nothing |
 | `publish "message" <files>` | Commits and pushes only the listed files after tests and scan | Your repository |
 
-Add a skill later with `preview --skills fact-check-post`, then `apply --plan <new plan> --accept-safe`. Details: [Sync workflow](docs/SYNC.md).
+Add a skill later with `preview --skills fact-check-post`, then `apply --plan <new plan> --accept-safe`. If a device already has a profile from another repository, the scripts stop instead of replacing it; `--switch-repository` switches on purpose. Details: [Sync workflow](docs/SYNC.md).
 
 ## What stays local
 

@@ -125,6 +125,38 @@ def repository_slug(repo):
     return slug
 
 
+def repository_identity(repo):
+    """owner/name of the GitHub origin; a clone without origin is identified by its folder."""
+    try:
+        url = git(repo, "remote", "get-url", "origin")
+    except subprocess.CalledProcessError:
+        return "local:" + str(repo)
+    match = re.search(r"github\.com[:/]([\w.-]+/[\w.-]+?)(?:\.git)?/?$", url)
+    return (match.group(1) if match else url).lower()
+
+
+def guard_repository(args, state):
+    """Stop when this device's profile was installed from another repository."""
+    if not state["items"] or getattr(args, "switch_repository", False):
+        return
+    hint = (" Смена источника заменит установленные инструкции, память и skills версиями из нового "
+            "репозитория. Делайте её только по явному решению пользователя: повторите с --switch-repository.")
+    known = state.get("repository")
+    if known:
+        current = repository_identity(args.repo_root)
+        if known != current:
+            raise ValueError(f"Профиль на этом устройстве установлен из {known}, а запуск идёт из {current}." + hint)
+        return
+    # Profiles installed before this check recorded only the clone path.
+    for root in roots_for(args).values():
+        pointer = root / "portable-repo-path"
+        if pointer.is_file():
+            clone = Path(pointer.read_text(encoding="utf-8").strip()).expanduser()
+            if clone.resolve() != args.repo_root.resolve():
+                raise ValueError(f"Профиль на этом устройстве установлен из клона {clone}, а запуск идёт из {args.repo_root}." + hint)
+            return
+
+
 def validate_origin(repo):
     slug = repository_slug(repo)
     if not slug:
@@ -575,6 +607,7 @@ def plan(args):
     requested = set(getattr(args, "requested", ()) or ())
     roots = roots_for(args)
     state = state_for(args)
+    guard_repository(args, state)
     items = units(args)
     ids = {u["id"] for u in items}
     # Only previously owned resources can be proposed for removal.
@@ -814,6 +847,7 @@ def apply_review(args, review, selections, safe=False):
                 if item["kind"] == "tree" and choices[item["id"]]["action"] in ("skip", "remove"):
                     chosen.discard(item["label"])
             new_state["selected_skills"] = sorted(chosen)
+            new_state["repository"] = repository_identity(args.repo_root)
             new_state.update(revision=review["revision"], last_transaction=review["id"])
             save_json(state_path(args), new_state)
             journal["status"] = "applied"
@@ -920,6 +954,8 @@ def parser():
     p.add_argument("--include-optional",action="store_true")
     p.add_argument("--skills",help="recommended, all, none, or catalog numbers/names separated by commas")
     p.add_argument("--lang",choices=["ru","en"],default="ru",help="language of the skill catalog")
+    p.add_argument("--switch-repository",action="store_true",
+                   help="deliberately install from a different repository than the one this device's profile came from")
     return p
 
 
