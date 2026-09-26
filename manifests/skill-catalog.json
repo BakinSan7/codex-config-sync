@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "skills": [
+    {
+      "name": "navigate-project",
+      "group": "work",
+      "recommended": true,
+      "ru": "Когда проект разросся: восстанавливает картину и предлагает один следующий проверяемый шаг.",
+      "en": "Restores orientation in a big project and picks one next verifiable step."
+    },
+    {
+      "name": "velosiped",
+      "group": "work",
+      "recommended": true,
+      "ru": "Перед заметной разработкой ищет готовые зрелые решения и согласует подход до правки кода.",
+      "en": "Looks for mature existing solutions and agrees on an approach before non-trivial coding."
+    },
+    {
+      "name": "cb-job-fit",
+      "group": "work",
+      "recommended": false,
+      "ru": "Сравнивает вакансию в C&B, HR-аналитике или payroll с вашим резюме и пишет сопроводительное письмо.",
+      "en": "Checks fit between a C&B, HR analytics or payroll vacancy and your CV; drafts a cover letter."
+    },
+    {
+      "name": "obsidian-idea-capture",
+      "group": "work",
+      "recommended": false,
+      "ru": "Записывает мысли, вопросы и решения связанными заметками в открытое хранилище Obsidian.",
+      "en": "Captures ideas, questions and decisions as linked notes in the open Obsidian vault."
+    },
+    {
+      "name": "fact-check-post",
+      "group": "research",
+      "recommended": true,
+      "ru": "Проверяет факты в постах, новостях и скриншотах по первоисточникам, с вердиктом по каждому утверждению.",
+      "en": "Fact-checks posts, news and screenshots against primary sources, claim by claim."
+    },
+    {
+      "name": "deep-research",
+      "group": "research",
+      "recommended": false,
+      "ru": "Глубокое исследование важного вопроса: много источников, перекрёстная проверка, разбор возражений.",
+      "en": "Deep multi-source research with cross-checked claims and an adversarial review pass."
+    },
+    {
+      "name": "youtube-research",
+      "group": "research",
+      "recommended": false,
+      "ru": "Исследует YouTube-каналы и видео по субтитрам и расшифровкам, с таймкодами в выводах.",
+      "en": "Researches YouTube channels and videos from subtitles or transcripts, with timestamps."
+    },
+    {
+      "name": "orchestrate-subagents",
+      "group": "agents",
+      "recommended": true,
+      "ru": "Ведёт сложную задачу только через субагентов: делит работу, собирает результаты и проверяет их.",
+      "en": "Runs a complex task purely through subagents: split, delegate, reconcile and verify."
+    },
+    {
+      "name": "context-watchdog",
+      "group": "agents",
+      "recommended": false,
+      "ru": "Только Codex: следит за расходом контекста в длинной работе и готовит перенос в новый чат.",
+      "en": "Codex only: watches context cost in long work and prepares a fresh-chat handoff."
+    },
+    {
+      "name": "codex-weekly-mentor",
+      "group": "agents",
+      "recommended": false,
+      "ru": "Только Codex: недельный разбор ваших чатов — повторяющиеся ошибки агента и что поправить.",
+      "en": "Codex only: weekly retrospective of your chats with recurring agent problems and fixes."
+    },
+    {
+      "name": "acceptance-frames",
+      "group": "browser",
+      "recommended": true,
+      "ru": "Доказывает видимое изменение кадрами «до и после», которые можно принять с одного взгляда.",
+      "en": "Proves a visible change with before/after frames a reviewer can accept at a glance."
+    },
+    {
+      "name": "playwright",
+      "group": "browser",
+      "recommended": false,
+      "ru": "Управляет настоящим браузером из терминала: переходы, формы, скриншоты, отладка интерфейса.",
+      "en": "Drives a real browser from the terminal: navigation, forms, screenshots, UI debugging."
+    },
+    {
+      "name": "playwright-interactive",
+      "group": "browser",
+      "recommended": false,
+      "ru": "Только Codex: постоянная сессия браузера для пошаговой отладки интерфейса.",
+      "en": "Codex only: a persistent browser session for iterative UI debugging."
+    },
+    {
+      "name": "photo-library-reconciler",
+      "group": "media",
+      "recommended": false,
+      "ru": "Наводит порядок в фото и видео по метаданным и хешам, находит дубли, ничего не теряя.",
+      "en": "Reconciles photo and video libraries by metadata and hashes; proves duplicates before deletion."
+    },
+    {
+      "name": "gpt-image-2-style-library",
+      "group": "media",
+      "recommended": false,
+      "ru": "Библиотека стилей и шаблонов запросов для генерации изображений GPT Image 2.",
+      "en": "Style library and prompt templates for GPT Image 2 image generation."
+    },
+    {
+      "name": "haiku-writer",
+      "group": "media",
+      "recommended": false,
+      "ru": "Пишет хокку на любую тему, мысль или событие (по-русски).",
+      "en": "Writes a haiku about any topic, thought or event (in Russian)."
+    }
+  ]
+}

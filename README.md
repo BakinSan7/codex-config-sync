@@ -5,186 +5,126 @@
 [![Windows and macOS](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](#requirements)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Safely sync a reviewed subset of your Codex `AGENTS.md`, personal skills, custom agents, portable memory, and selected `config.toml` values across Windows and macOS — and, under the same safety rules, your Claude Code `CLAUDE.md`, skills, subagents, and selected `settings.json` values.**
+**One reviewed profile for Codex and Claude Code on Windows and macOS: shared instructions, portable memory, selected settings, and a catalog of skills you pick at install time.**
 
 [Русская версия](README.ru.md)
 
 > [!IMPORTANT]
-> This is an unofficial community project. It is not affiliated with or endorsed by OpenAI.
+> This is an unofficial community project. It is not affiliated with or endorsed by OpenAI or Anthropic.
 
 ## Why this exists
 
-Copying the entire `~/.codex` directory is unsafe. It can mix credentials, local permissions, project trust, plugin state, caches, device paths, UI settings, and conversation history between machines.
+Copying `~/.codex` or `~/.claude` between machines mixes credentials, permissions, plugin state, caches, device paths and chat history. Codex Config Sync keeps a small, explicit profile in Git and installs independent copies on each device:
 
-Codex Config Sync uses a smaller, explicit surface:
-
-- a strict manifest of files and owned skills;
-- separate `common`, `windows`, and `macos` profiles;
-- an empty-by-default allowlist for portable `config.toml` values;
-- a mandatory two-step `plan` → `apply` workflow;
-- content hashes that invalidate a plan after any source or target change;
-- backups, atomic writes, post-write verification, and rollback;
-- rejection of path traversal, symlinks, Windows junctions, and reparse points;
-- a repository scanner for common credentials, private keys, and unsafe files, run during
-  `plan` and again immediately before `apply`.
-
-It never commits, pushes, downloads third-party skills, copies authentication state, or changes operating-system permissions for you.
+- one instructions file becomes `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`;
+- skills are offered as a catalog with short explanations, and only the ones you choose are installed;
+- every change is shown as a short tree, and you decide per item: accept, keep, skip, remove or merge;
+- your choices are remembered on the device, and a kept or merged local version is never replaced silently;
+- writes are journaled and can be rolled back; links, junctions and reparse points are refused;
+- settings that belong to one device (model, reasoning effort, permissions, hooks, MCP commands, plugins, credentials) are refused by the scripts.
 
 ## Requirements
 
-- Windows 10/11 with PowerShell, or a currently supported macOS release;
-- Python 3.11 or newer;
-- Git for cloning and synchronizing your private repository.
-
-The core uses only the Python standard library. Codex itself is not required for isolated tests, but it is required to verify real instruction and skill discovery after installation.
+- Windows 10/11 with PowerShell, or a supported macOS release;
+- Python 3.11 or newer and Git;
+- Codex and/or Claude Code for the profile to be used; the scripts themselves need only the Python standard library.
 
 ## Quick start
 
-### 1. Create your private configuration repository
-
-Use **Use this template** on GitHub, choose **Create a new repository**, and make that new repository **private**. Do not store your personal configuration in a public fork.
-
-Clone your private repository and enter it:
-
-```text
-git clone https://github.com/<your-account>/<your-private-config-repo>.git
-cd <your-private-config-repo>
-```
-
-Requirements: Git and Python 3.11 or newer.
-
-### 2. Import the reviewed configuration from your first machine
-
-Windows PowerShell:
-
-```powershell
-.\codex-sync.ps1 doctor
-.\codex-sync.ps1 plan --direction from-device --show-diff
-.\codex-sync.ps1 apply
-.\codex-sync.ps1 scan
-git diff
-```
+Clone the repository and run the first installation. The installer shows the skill catalog and asks which skills to install.
 
 macOS:
 
 ```bash
-./codex-sync.sh doctor
-./codex-sync.sh plan --direction from-device --show-diff
-./codex-sync.sh apply
-./codex-sync.sh scan
-git diff
+git clone https://github.com/BakinSan7/codex-config-sync.git ~/codex-config-sync
+cd ~/codex-config-sync
+./codex-sync.sh bootstrap
 ```
 
-Review the diff before you commit it. The tool deliberately does not run `git add`, `commit`, or `push`.
-
-### 3. Apply it on the second machine
-
-Pull or clone your private repository, then review and apply the opposite direction:
+Windows PowerShell:
 
 ```powershell
-# Windows
-.\codex-sync.ps1 plan --direction to-device --show-diff
-.\codex-sync.ps1 apply
-.\codex-sync.ps1 verify
+git clone https://github.com/BakinSan7/codex-config-sync.git $HOME\codex-config-sync
+cd $HOME\codex-config-sync
+.\codex-sync.ps1 bootstrap
 ```
 
-```bash
-# macOS
-./codex-sync.sh plan --direction to-device --show-diff
-./codex-sync.sh apply
-./codex-sync.sh verify
-```
+When the installer runs without a terminal (for example, when an agent runs it), pass the choice explicitly: `--skills recommended`, `--skills all`, `--skills none`, or catalog numbers and names such as `--skills 1,5,fact-check-post`. To see the list first, run `catalog` (add `--lang en` for English descriptions).
 
-If either the repository or the local target changes after planning, `apply` refuses to continue. Run `plan` again and review the new diff.
+To keep your own instructions and memory, use **Use this template** on GitHub, make the new repository **private**, set `repository` in `manifests/profile.json` to its `owner/name`, and clone that repository instead. Do not put personal configuration into a public fork.
 
-## What gets synchronized
+## Skill catalog
 
-| Surface | Default | How to opt in |
+| Skill | Apps | What it does | Source |
+| --- | --- | --- | --- |
+| navigate-project ★ | Codex, Claude | Restores orientation in a big project and picks one next verifiable step | bundled |
+| velosiped ★ | Codex, Claude | Looks for mature existing solutions before non-trivial coding | bundled |
+| cb-job-fit | Codex, Claude | Checks fit between a C&B or HR analytics vacancy and your CV; drafts a cover letter | bundled |
+| obsidian-idea-capture | Codex, Claude | Captures ideas and questions as linked notes in Obsidian | bundled |
+| fact-check-post ★ | Codex, Claude | Fact-checks posts and news against primary sources, claim by claim | bundled |
+| deep-research | Codex, Claude | Deep multi-source research with cross-checked claims | alirezarezvani/claude-skills, MIT |
+| youtube-research | Codex, Claude | Researches YouTube channels and videos from transcripts | timbroddin/skills, no license stated |
+| orchestrate-subagents ★ | Codex, Claude | Runs a complex task purely through subagents | bundled |
+| context-watchdog | Codex | Watches context cost in long work and prepares a handoff | bundled |
+| codex-weekly-mentor | Codex | Weekly retrospective of your Codex chats | bundled |
+| acceptance-frames ★ | Codex, Claude | Proves a visible change with before/after frames | BakinSan7/acceptance-frames, MIT |
+| playwright | Codex, Claude | Drives a real browser from the terminal | openai/skills, Apache-2.0 |
+| playwright-interactive | Codex | Persistent browser session for UI debugging | openai/skills, Apache-2.0 |
+| photo-library-reconciler | Codex, Claude | Reconciles photo and video libraries by metadata and hashes | bundled |
+| gpt-image-2-style-library | Codex, Claude | Style library and prompt templates for GPT Image 2 | freestylefly/awesome-gpt-image-2, MIT |
+| haiku-writer | Codex, Claude | Writes a haiku about any topic (in Russian) | bundled |
+
+★ recommended. Bundled skills live in `personal-skills/`. Third-party skills are not copied into this repository: when you choose one, the installer downloads the exact pinned commit from its author, checks the content hash, and never executes anything while preparing it. See [Skills](docs/SKILLS.md).
+
+The `codex-config-sync` skill is always installed: it lets Codex and Claude Code run these commands for you.
+
+## Everyday use
+
+| Command | What it does | Writes |
 | --- | --- | --- |
-| Global `AGENTS.md` | Included example | Edit `portable/AGENTS.md` |
-| Portable memory note | Included example | Edit `portable/portable-memory.md` |
-| Personal skills you own | Empty | Add a directory and list it in the manifest |
-| Custom agent TOML files | Empty | Add a file and list it in the manifest |
-| Stable `config.toml` values | Empty | Add reviewed keys to `config/*.json` |
-| Claude Code global `CLAUDE.md` | Included example | Edit `portable/CLAUDE.md` |
-| Claude Code skills you own | Empty | Add a directory to `claude-skills/` and list it in `claude_skills` |
-| Claude Code subagent `.md` files | Empty | Add a file to `claude-agents/` and list it in `claude_agents` |
-| Stable Claude `settings.json` values | Empty | Add reviewed keys to `config/claude-*.json` |
-| OS-specific content | Empty | Use the `windows` or `macos` manifest profile |
+| `catalog` | Shows the skill catalog with ★ recommended and ✓ installed | Nothing |
+| `bootstrap` | First installation: asks for skills, installs new items, verifies | Profile files |
+| `preview` | Fetches the repository and shows what would change, as a tree | A local plan only |
+| `apply --plan <plan> [--decisions <file>] [--accept-safe]` | Applies a reviewed plan with your choices | Profile files |
+| `verify` | Checks that installed files match your choices | Nothing |
+| `detail --plan <plan> --id <item>` | Shows the exact text that would change | Nothing |
+| `rollback --id <transaction>` | Restores the state before an apply | Profile files |
+| `scan [--public-audit]` | Looks for secrets, sensitive files and user paths | Nothing |
+| `publish "message" <files>` | Commits and pushes only the listed files after tests and scan | Your repository |
 
-Claude Code targets resolve against `$CLAUDE_HOME`: the `CLAUDE_CONFIG_DIR` environment variable when it is set, `~/.claude` otherwise. Codex is not required to sync only Claude Code, and vice versa.
-
-See [Configuration](docs/CONFIGURATION.md) for examples.
+Add a skill later with `preview --skills fact-check-post`, then `apply --plan <new plan> --accept-safe`. Details: [Sync workflow](docs/SYNC.md).
 
 ## What stays local
 
-- reasoning effort and model availability;
-- font sizes, window layout, hotkeys, and notifications;
-- sandbox mode, approval policy, network access, and OS permissions;
-- project trust and absolute project paths;
-- plugin IDs, plugin cache, OAuth, and connector authorization;
-- MCP commands, environment variables, credentials, and local runtime paths;
-- `auth.json`, tokens, cookies, SSH keys, and password-manager data;
-- chats, sessions, generated memory, logs, caches, backups, and attachments;
-- third-party skills and their executable dependencies;
-- for Claude Code: `.credentials.json`, `~/.claude.json`, the `env`, `apiKeyHelper` and other
-  credential helpers, `hooks` and `statusLine` commands, plugin and MCP state, projects,
-  todos, shell snapshots, and auto-generated memory.
+- the default model, reasoning effort and model availability;
+- permissions, sandbox and approval settings, OS permissions;
+- hooks, status line commands, MCP commands and plugin state;
+- credentials, tokens, cookies, keys and password-manager data;
+- chats, sessions, auto-generated memory, logs, caches and backups;
+- device UI preferences such as fonts, window size and hotkeys.
 
-These boundaries are enforced for known sensitive `config.toml` sections, not merely documented. See [Portability policy](docs/PORTABILITY.md).
-
-## Safety flow
-
-```mermaid
-flowchart LR
-    A[Reviewed private repository] --> B[plan]
-    C[Current device state] --> B
-    B --> D[Hash-bound local plan]
-    D --> E[apply]
-    E --> F[Backup]
-    E --> G[Atomic writes]
-    G --> H[Verify or scan]
-    H -->|failure| I[Automatic rollback]
-    H -->|success| J[Synced state]
-```
-
-The plan file and backups are local and ignored by Git. A plan contains paths and hashes, not file contents.
-
-## Commands
-
-| Command | Purpose | Writes data |
-| --- | --- | --- |
-| `doctor` | Validate requirements, manifests, config profiles, and repository safety | No |
-| `plan --direction from-device` | Safety-scan and preview local → repository changes, then bind them to hashes | Local ignored plan only |
-| `plan --direction to-device` | Safety-scan and preview repository → local changes, then bind them to hashes | Local ignored plan only |
-| `apply` | Apply the last unchanged plan, create a backup, and verify | Yes |
-| `verify` | Compare managed repository content with the current device | No |
-| `scan` | Detect common secrets, private keys, unsafe files, and links | No |
-| `rollback --backup <path>` | Restore an unchanged post-apply state from a specific backup | Yes |
-
-Add `--json` for machine-readable results. Add `--public-audit` to `doctor` or `scan` when checking a public template for user-specific absolute paths.
+Rules that belong to one Claude Code device go to `~/.claude/rules/*.md`, which Claude Code loads next to `CLAUDE.md`. See [Portability policy](docs/PORTABILITY.md).
 
 ## Important limitations
 
-- The tool does not perform a semantic merge. It shows a diff and requires a new plan after you edit either side.
-- Managed trees are additive: extra destination files are not deleted automatically.
-- The scanner is defense in depth, not proof that a repository contains no private information.
-- The threat model does not protect against a malicious local administrator racing filesystem operations during `apply`.
-- Codex configuration evolves. Review the current official documentation before adding new keys.
+- The scanner is defense in depth, not proof that a file contains no private information.
+- A merge is a complete document you approve; the tool does not merge text automatically.
+- The threat model does not cover a malicious local administrator racing filesystem operations.
+- Codex and Claude Code configuration evolves. Check the current official documentation before adding new keys.
+- The scripts print their messages in Russian; the catalog is available in English with `--lang en`.
 
 ## Documentation
 
-- [Configuration](docs/CONFIGURATION.md)
-- [Migrating two existing machines](docs/MIGRATION.md)
+- [Sync workflow](docs/SYNC.md)
+- [Skills](docs/SKILLS.md)
 - [Portability policy](docs/PORTABILITY.md)
 - [Security model](docs/SECURITY_MODEL.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Prior art and licensing](docs/PRIOR_ART.md)
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
+- [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md)
 
-Codex configuration surfaces are documented by OpenAI in the [`config.toml` reference](https://learn.chatgpt.com/docs/config-file/config-reference), [`AGENTS.md` guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md), and [skills documentation](https://learn.chatgpt.com/docs/skills-and-plugins).
+Official references: Codex [`config.toml`](https://learn.chatgpt.com/docs/config-file/config-reference), [`AGENTS.md`](https://learn.chatgpt.com/docs/agent-configuration/agents-md) and [skills](https://learn.chatgpt.com/docs/skills-and-plugins); Claude Code [memory and rules](https://code.claude.com/docs/en/memory) and [settings](https://code.claude.com/docs/en/settings).
 
 ## License
 
-[MIT](LICENSE) © 2026 BakinSan7.
+[MIT](LICENSE) © 2026 BakinSan7. Third-party skills keep their own licenses and are downloaded from their authors.

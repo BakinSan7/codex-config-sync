@@ -1,0 +1,4 @@
+interface:
+  display_name: "СВОЙ · Obsidian Idea Capture"
+  short_description: "Capture ideas as linked Obsidian notes"
+  default_prompt: "Use $obsidian-idea-capture to organize these ideas in my active Obsidian vault."

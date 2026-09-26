@@ -1,30 +1,18 @@
 {
-  "schema_version": 1,
-  "portable_files": [
-    {
-      "source": "portable/AGENTS.md",
-      "target_root": "codex",
-      "target": "AGENTS.md",
-      "platforms": ["windows", "macos"],
-      "required_on_collect": false
-    },
-    {
-      "source": "portable/portable-memory.md",
-      "target_root": "codex",
-      "target": "portable-memory.md",
-      "platforms": ["windows", "macos"],
-      "required_on_collect": false
-    },
-    {
-      "source": "portable/CLAUDE.md",
-      "target_root": "claude",
-      "target": "CLAUDE.md",
-      "platforms": ["windows", "macos"],
-      "required_on_collect": false
-    }
-  ],
   "personal_skills": {
-    "common": [],
+    "common": [
+      "cb-job-fit",
+      "codex-config-sync",
+      "codex-weekly-mentor",
+      "context-watchdog",
+      "fact-check-post",
+      "haiku-writer",
+      "navigate-project",
+      "obsidian-idea-capture",
+      "orchestrate-subagents",
+      "photo-library-reconciler",
+      "velosiped"
+    ],
     "windows": [],
     "macos": []
   },
@@ -33,14 +21,14 @@
     "windows": [],
     "macos": []
   },
-  "claude_skills": {
-    "common": [],
-    "windows": [],
-    "macos": []
-  },
   "claude_agents": {
     "common": [],
     "windows": [],
     "macos": []
-  }
+  },
+  "instructions_source": "portable/AGENTS.md",
+  "commit_rules_source": "portable/git-commit.md",
+  "pr_rules_source": "portable/git-pr.md",
+  "portable_memory_source": "portable/portable-memory.md",
+  "portable_memory_target": "portable-memory.md"
 }

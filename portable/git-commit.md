@@ -1,0 +1,1 @@
+Use Conventional Commits: `<type>(<scope>): <summary>`. Keep the subject under 72 characters, written as an imperative, without a trailing period. One commit is one logical change. Do not claim checks that did not run.

@@ -11,7 +11,8 @@ Describe any new writes, managed paths, permissions, dependencies, deletion beha
 ## Verification
 
 - [ ] Unit tests pass on the affected platform(s).
-- [ ] `doctor --public-audit` passes for Windows and macOS profiles.
+- [ ] `scan --public-audit` passes.
+- [ ] Catalog changes are reflected in `README.md`, `README.ru.md` and `docs/SKILLS.md`.
 - [ ] Wrapper smoke test passes on the affected platform.
 - [ ] `git diff --check` passes.
 - [ ] No credentials, personal configuration, real user paths, symlinks, or generated state were added.

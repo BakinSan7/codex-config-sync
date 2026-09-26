@@ -1,55 +1,45 @@
 # Troubleshooting
 
-## `Plan is stale`
+## «Источник изменился» or «Файлы или план изменились после обзора»
 
-The repository, managed local target, platform, or selected config changed after the preview. This is expected protection.
+The repository, a managed file, the device state or the skill selection changed after `preview`. This is the stale-plan protection. Run `preview` again and apply the new plan.
 
-Run `plan` again, review the new diff, then run `apply`.
+## «Нужен выбор для …»
 
-## `Skill collision`
+The item differs on the device and the tool cannot tell which side is intended: a local edit without a known base, a conflict, a kept or merged local version after a profile update, or an item removed from the profile. Look at it with `detail --plan <plan> --id <item>` and put `accept`, `keep`, `skip`, `remove` or a complete `merge` text into the decisions file.
 
-The same personal skill name is discoverable under both `$CODEX_HOME/skills` and `$AGENTS_HOME/skills`.
+## «Дублирующий skill»
 
-Compare the complete directories, merge the intended content into one canonical copy, and remove or retire the competing discovery copy manually. The tool will not pick a winner.
+The same skill name is discoverable in `~/.codex/skills` and `~/.agents/skills`. Compare both folders, keep one canonical copy and remove the other discovery copy yourself. The tool will not pick a winner.
 
-## `Refusing link or reparse point`
+## «Ссылка вместо независимого пути»
 
-A managed path contains a symlink, macOS link, Windows junction, or other reparse point. This may be intentional in a dotfiles setup, but following it would weaken the containment guarantee.
+A managed path contains a symlink, a Windows junction or another reparse point. On macOS, `/tmp` itself is a link; use the real `/private/tmp` path for tests. Use real directories for managed paths.
 
-Use real directories for managed paths or keep that component outside this tool.
+## «Local-only config key is forbidden» or «Local-only Claude setting is forbidden»
 
-## `Local-only config key is forbidden`
+The profile lists a setting that belongs to one device: model, reasoning effort, permissions, hooks, MCP commands, plugins or credentials. Remove it from `config/*.json` or `claude_settings` and set it on each device. Do not rename or nest the value to get around the check.
 
-The selected key controls device state, permissions, runtime, authentication, or a known local-only surface. Remove it from `config/*.json` and configure it separately on each machine.
+## «Неверный origin»
 
-Do not bypass the validation by renaming or nesting the value elsewhere.
+The clone's `origin` does not match `repository` in `manifests/profile.json`. If you created your own copy from the template, set `repository` to its `owner/name`.
 
-## `Source is missing; target preserved`
+## A third-party skill shows «источник ещё не получен»
 
-During `from-device`, an optional managed file or skill is absent locally. Nothing is deleted from the repository. Decide manually whether the repository copy should remain managed.
+Its pinned source is not in the local cache yet. Choose it with `--skills <name>` (or run `prepare --skills <name>`), then run `preview` again. Downloading needs access to GitHub.
 
-During `to-device`, a missing canonical repository source is an error.
+## «Есть незавершённая установка»
 
-## Automatic rollback occurred
-
-At least one write or post-write check failed. The tool restored the pre-apply state and reports the backup path. Fix the first reported error, run `doctor`, then create and review a new plan.
-
-If automatic rollback also fails, stop and preserve the backup directory. Do not run another apply until the target and backup hashes are inspected.
+A previous apply was interrupted. Restore it with `rollback --id <transaction>` from `~/.codex/portable-sync/transactions`, then create a new plan.
 
 ## Python is too old
 
-Install Python 3.11 or newer and ensure `python` on Windows or `python3` on macOS resolves to that interpreter. You can set `PYTHON_BIN` for the Bash wrapper.
+Install Python 3.11 or newer. On Windows the wrapper tries `python`, `python3` and `py -3`; on macOS set `PYTHON_BIN` if `python3` is older.
 
 ## PowerShell blocks the wrapper
 
-Review the script, then run it under an execution policy permitted by your organization. Do not permanently weaken a managed corporate policy solely for this project.
+Review the script and run it under an execution policy your organization permits. The Python entry point is equivalent: `python scripts/sync_profile.py preview --platform windows`.
 
-The Python entrypoint is equivalent:
+## Codex or Claude Code does not show an installed skill
 
-```text
-python scripts/codex_config_sync.py doctor --platform windows
-```
-
-## Codex does not show the installed skill
-
-`verify` only proves filesystem contents. Start a new Codex process, inspect the current discovery roots, validate `SKILL.md` frontmatter, and confirm that the skill's platform dependencies exist.
+`verify` proves only the files. Start a new session, check the app's skill folders, validate the `SKILL.md` frontmatter and make sure the skill's own dependencies are installed.

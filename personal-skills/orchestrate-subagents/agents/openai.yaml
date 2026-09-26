@@ -1,0 +1,4 @@
+interface:
+  display_name: "СВОЙ · Оркестратор субагентов"
+  short_description: "Делегирует и проверяет работу субагентов"
+  default_prompt: "Use $orchestrate-subagents to complete this task through subagents only."

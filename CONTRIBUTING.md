@@ -4,29 +4,29 @@ Contributions that improve portability, diagnostics, safety, documentation, or t
 
 ## Before opening a pull request
 
-1. Keep the implementation dependency-free and compatible with Python 3.11 or newer.
-2. Do not add real user configuration, credentials, third-party skills, symlinks, generated state, or OS permissions.
-3. Preserve the two-phase plan contract and non-deleting default behavior.
+1. Keep the scripts dependency-free and compatible with Python 3.11 or newer.
+2. Do not add real user configuration, credentials, personal paths, symlinks, generated state, or OS permissions.
+3. Keep the review contract: `preview` builds a plan, `apply` needs an unchanged plan, and a kept or merged local file is never replaced silently.
 4. Add or update tests for every behavior change.
 5. Run:
 
 ```text
 python -m unittest discover -s tests -v
-python scripts/codex_config_sync.py doctor --platform windows --public-audit
-python scripts/codex_config_sync.py doctor --platform macos --public-audit
+python scripts/portable_config.py scan --repo-root . --public-audit
 git diff --check
 ```
 
-Run the platform wrapper smoke test on the operating system you changed.
+Run the wrapper smoke test (`codex-sync.sh` or `codex-sync.ps1` with `bootstrap --working-tree --skills none` and temporary `CODEX_HOME`, `CLAUDE_CONFIG_DIR` and `AGENTS_HOME`) on the operating system you changed.
 
 ## Design rules
 
-- Public safety is an allowlist, not a blacklist alone.
-- Paths from manifests must remain relative and inside their declared root.
-- Managed sources and targets must be regular files or directories, never links or reparse points.
-- Any write to live Codex state requires a reviewed, unchanged plan and a backup.
-- Never add automatic Git publication or third-party code execution.
-- New configuration keys must be checked against current official Codex documentation and the local-only policy.
+- Public safety is an allowlist first; local-only keys are refused, not merely documented.
+- Paths from manifests stay relative and inside their declared root.
+- Managed sources and targets are regular files or directories, never links or reparse points.
+- Any write to a live profile requires a reviewed, unchanged plan and a journal.
+- Third-party skills are referenced by full commit SHA and fetched only when chosen; nothing from them runs during preparation.
+- New catalog entries need short `ru` and `en` explanations and, for third-party skills, the author's license.
+- New configuration keys must be checked against current official Codex and Claude Code documentation and the local-only policy.
 
 ## Pull requests
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Config Sync"
+  short_description: "Install and sync a shared Codex and Claude Code profile"
+  default_prompt: "Use $codex-config-sync to show the skill catalog and install or sync my shared profile."

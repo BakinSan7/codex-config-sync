@@ -1,0 +1,1 @@
+Title: `<type>(<scope>): <result>`. The description states what changed and why, which checks ran, what still needs a manual check, and known risks or limitations. Do not mark unverified work as done.

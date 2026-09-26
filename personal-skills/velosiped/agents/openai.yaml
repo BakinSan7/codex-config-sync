@@ -1,0 +1,6 @@
+interface:
+  display_name: "СВОЙ · Велосипед"
+  short_description: "Ищет зрелые решения до разработки"
+  default_prompt: "Используй $velosiped: найди проверенное решение и согласуй план до написания кода."
+policy:
+  allow_implicit_invocation: true

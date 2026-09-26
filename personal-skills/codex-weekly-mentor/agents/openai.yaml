@@ -1,0 +1,4 @@
+interface:
+  display_name: "Еженедельный ментор Codex"
+  short_description: "Разбор проблем в чатах за неделю"
+  default_prompt: "Используй $codex-weekly-mentor, чтобы разобрать мои чаты Codex за неделю и предложить доказательные улучшения."
