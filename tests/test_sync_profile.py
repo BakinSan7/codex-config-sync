@@ -450,6 +450,34 @@ class SafetyTests(ProfileFixture):
         self.write_json("config/common.json",{"sections":{"":{"model":"any-model"}}})
         with self.assertRaisesRegex(ValueError,"Local-only config key"): sync.plan(self.args)
 
+    def other_repository(self, keep_history=False):
+        other=self.root/"other"
+        shutil.copytree(self.repo,other,ignore=None if keep_history else shutil.ignore_patterns(".git"))
+        if not keep_history:
+            subprocess.run(["git","init","-q",str(other)],check=True)
+            subprocess.run(["git","-C",str(other),"-c","user.name=Test","-c","user.email=test@example.invalid",
+                            "commit","--allow-empty","-qm","other"],check=True)
+        (other/"portable/AGENTS.md").write_text("template example\n",encoding="utf-8")
+        return other
+
+    def test_install_from_another_repository_is_refused(self):
+        self.install()
+        personal=(self.args.codex_home/"AGENTS.md").read_text(encoding="utf-8")
+        self.args.repo_root=self.other_repository()
+        with self.assertRaisesRegex(ValueError,"установлен из"): sync.plan(self.args)
+        self.assertEqual((self.args.codex_home/"AGENTS.md").read_text(encoding="utf-8"),personal)
+        self.args.switch_repository=True
+        sync.apply_review(self.args,sync.plan(self.args),{},safe=True)
+        self.assertEqual(sync.state_for(self.args)["repository"],sync.repository_identity(self.args.repo_root))
+        self.assertEqual((self.args.codex_home/"AGENTS.md").read_text(encoding="utf-8").splitlines()[0],"template example")
+
+    def test_profile_without_recorded_repository_uses_clone_path(self):
+        self.install()
+        state=sync.state_for(self.args); state.pop("repository"); sync.save_json(sync.state_path(self.args),state)
+        sync.plan(self.args)
+        self.args.repo_root=self.other_repository(keep_history=True)
+        with self.assertRaisesRegex(ValueError,"клона"): sync.plan(self.args)
+
     def test_repository_slug_is_configurable(self):
         profile=sync.read_json(self.repo/"manifests/profile.json")
         profile["repository"]=""; self.write_json("manifests/profile.json",profile)

@@ -8,6 +8,10 @@ The repository, a managed file, the device state or the skill selection changed 
 
 The item differs on the device and the tool cannot tell which side is intended: a local edit without a known base, a conflict, a kept or merged local version after a profile update, or an item removed from the profile. Look at it with `detail --plan <plan> --id <item>` and put `accept`, `keep`, `skip`, `remove` or a complete `merge` text into the decisions file.
 
+## «Профиль на этом устройстве установлен из …»
+
+The device's profile came from another repository or another clone. Running this one would replace your instructions, memory and skills with its versions. Use the repository the device already uses. If you really want to switch sources (or you moved the clone), run the command again with `--switch-repository`.
+
 ## «Дублирующий skill»
 
 The same skill name is discoverable in `~/.codex/skills` and `~/.agents/skills`. Compare both folders, keep one canonical copy and remove the other discovery copy yourself. The tool will not pick a winner.

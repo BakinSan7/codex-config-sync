@@ -19,6 +19,8 @@ When the repository has `manifests/skill-catalog.json`, skills are installed onl
 
 A later request such as "add fact-check-post" is `preview --skills fact-check-post` followed by `apply --accept-safe` with the new plan. Skipping or removing a skill on this device takes it out of the device selection.
 
+If the scripts report that this device's profile was installed from another repository or clone, stop and tell the user: continuing would replace their instructions, memory and skills. Add `--switch-repository` only after the user explicitly chooses to switch sources.
+
 ## Receive from GitHub
 
 Run `preview` (fetch + fast-forward + local comparison). Use `--working-tree` only for a reviewed change being developed locally. Show a short indented tree using ├── and └──, not Mermaid. Group shared items once with app labels. Include personalization, every skill name, memory record count and additions, settings, and local-only integrations. Avoid raw paths, hashes, technical keys and line diffs unless requested.

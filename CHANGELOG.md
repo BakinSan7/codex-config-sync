@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-26
+
 The engine was replaced by the selective sync used in the maintainer's own profile. Commands and file layout changed; see the README.
 
 ### Added
@@ -14,6 +16,7 @@ The engine was replaced by the selective sync used in the maintainer's own profi
 - Per-item review decisions (`accept`, `keep`, `skip`, `remove`, `merge`) remembered on the device; kept and merged local versions are re-offered after a profile change and never replaced silently; skipped and removed items are not reinstalled.
 - Journaled apply with `rollback`, `verify`, `detail`, and a review tree that also shows agents and line-ending-only differences.
 - `publish` for committing and pushing only the listed files after tests and the scanner.
+- A per-device source check: the scripts stop when a device's profile came from another repository or clone, instead of replacing it; `--switch-repository` switches on purpose.
 - Claude Code subagents (`claude-agents/`) and settings (`claude_settings`) with refused local-only keys (`model`, `env`, `hooks`, `statusLine`, `permissions`, plugins, credential helpers).
 - Scanner rules for sensitive file names and folders; `scan --public-audit` for user-specific absolute paths.
 
@@ -42,5 +45,6 @@ The engine was replaced by the selective sync used in the maintainer's own profi
 - Repository scanner and public-template audit.
 - Windows/macOS CI, bilingual onboarding, migration guidance, and security documentation.
 
-[Unreleased]: https://github.com/BakinSan7/codex-config-sync/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/BakinSan7/codex-config-sync/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/BakinSan7/codex-config-sync/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/BakinSan7/codex-config-sync/releases/tag/v0.1.0
