@@ -1,43 +1,34 @@
 # Portability policy
 
-The project synchronizes reviewed behavior and reproducible user-owned files, not complete device state.
+The profile synchronizes behaviour that should be the same everywhere. Everything that describes one device, one account or one session stays on that device.
 
-| Category | Common | OS-specific | Always local |
-| --- | --- | --- | --- |
-| Global instructions | Reviewed `AGENTS.md` | Rare | Project instructions in other repositories |
-| Portable memory | Short manual note | Rare | Generated memory, sessions, chats, logs |
-| Personal skills | Owned, portable skills | Skills with OS-only tools | Third-party installation state and dependencies |
-| Custom agents | Definitions whose dependencies exist everywhere | OS-only agents | Runtime model availability and subagent limits |
-| Config | Explicit stable allowlist | Explicit stable OS profile | Security, UI, paths, auth, plugins, MCP, telemetry |
-| Credentials | Never | Never | Password manager, Keychain, Credential Manager, SSH agent |
+## Common
 
-## Enforced local-only configuration
+- the shared instructions document and the optional commit and pull request rules;
+- the portable memory note: short reviewed facts, no history;
+- skills without device dependencies, bundled or pinned to an author's commit;
+- a small allowlist of `config.toml` keys in `config/common.json` and of `settings.json` keys in `claude_settings`;
+- custom agents and Claude Code subagents whose dependencies exist on every device.
 
-The tool refuses known machine or security state rather than merely warning about it:
+## Platform
 
-- `model_reasoning_effort`;
-- `sandbox_mode`, `approval_policy`, and `approvals_reviewer`;
-- `notify`, provider endpoints, provider tables, and profiles;
-- `projects`, `plugins`, `mcp_servers`, `agents`, `windows`, `otel`, and sandbox write rules;
-- desktop font, reasoning, notification, hotkey, remote-control, and window-size settings;
-- secret-like configuration key names.
+Entries under `windows` or `macos` in `manifests/portable-files.json` and in `config/<os>.json` are installed only on that operating system. A skill is not moved to another OS because its name matches: rewrite OS-specific commands and check both systems, or keep it in the platform section.
 
-For Claude Code `settings.json`, the same rule refuses:
+## Local only
 
-- `env` and every credential helper: `apiKeyHelper`, `awsAuthRefresh`, `awsCredentialExport`,
-  `otelHeadersHelper`;
-- commands the terminal executes: `hooks` and `statusLine`;
-- account state: `forceLoginMethod`, `forceLoginOrgUUID`, `oauthAccount`;
-- secret-like key names anywhere in a settings path;
-- `.credentials.json` and `~/.claude.json` as files: they hold tokens, project trust, and
-  device history, and can never be listed as portable files.
+The scripts refuse these keys even when a profile lists them (`scripts/portable_config.py`):
 
-Unknown future Codex or Claude Code settings are not automatically safe. The user must opt in and review current official documentation.
+- Codex: `model`, `model_reasoning_effort`, `model_provider`, `approval_policy`, `sandbox_mode`, `notify`, `profile` and provider URLs; the sections `agents`, `mcp_servers`, `model_providers`, `otel`, `plugins`, `profiles`, `projects`, `sandbox_workspace_write` and `windows`; desktop keys about fonts, hotkeys, notifications, reasoning, remote control and window size; secret-like key names;
+- Claude Code: `model`, `env`, `hooks`, `statusLine`, `permissions`, `sandbox`, `enabledPlugins`, `extraKnownMarketplaces`, credential helpers and account keys.
 
-## Why plugins and MCP stay local
+They also never copy credentials, `auth.json`, `.credentials.json`, keys, cookies, Keychain or Credential Manager data, chats, sessions, auto-memory, logs, caches, SQLite databases, backups, plugin caches, project trust or absolute project paths.
 
-An inventory is not equivalent to a safe installation. Plugin IDs, enablement, OAuth state, MCP commands, runtime paths, environment variables, headers, and OS permissions can differ across devices. This project does not apply them.
+Plugins, local MCP servers, hooks, scheduled tasks and additional instruction files are shown in the review as a device inventory. They are never copied.
 
-## Why generated memory stays local
+## Device-specific instructions
 
-Generated memory and task history can contain private context, stale conclusions, local paths, or data that was never reviewed for publication. Only the manual Markdown note in `portable/portable-memory.md` is portable.
+Claude Code loads `~/.claude/rules/*.md` for every project next to `~/.claude/CLAUDE.md`. Put rules that belong to one device there, so the shared file stays equal to the profile. Codex has no equivalent folder: a device-specific `AGENTS.md` stays a remembered `keep` or `merge` decision.
+
+## Duplicate skills
+
+If a skill name exists both in `~/.codex/skills` and in `~/.agents/skills`, review and apply stop. Compare the folders, keep one canonical copy and remove the other discovery copy yourself.

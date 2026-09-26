@@ -40,4 +40,4 @@ Source: <https://github.com/dinoallo/.codex>
 
 ## Independent design choices
 
-The hash-bound local plan, stale-plan rejection, automatic transactional rollback, link/reparse refusal, public-path audit, enforced local-only Codex sections, and non-downloading skill policy are original implementation choices in this repository.
+The hash-bound local plan, stale-plan rejection, per-item remembered decisions, journaled rollback, link/reparse refusal, public-path audit, enforced local-only Codex and Claude Code settings, the install-time skill catalog, and pinned, content-hashed third-party skill downloads are original implementation choices in this repository.

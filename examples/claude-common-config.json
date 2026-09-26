@@ -1,7 +1,11 @@
 {
-  "values": {
-    "includeCoAuthoredBy": false,
-    "permissions.defaultMode": "default",
+  "claude_settings": {
+    "autoMemoryEnabled": true,
+    "attribution": {
+      "commit": "",
+      "pr": "",
+      "sessionUrl": false
+    },
     "spinnerTipsEnabled": false
   }
 }
