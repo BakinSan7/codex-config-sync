@@ -1,0 +1,4 @@
+interface:
+  display_name: "СВОЙ · C&B Job Fit"
+  short_description: "Assess vacancy fit and draft a letter"
+  default_prompt: "Use $cb-job-fit to assess this C&B vacancy against my experience and draft a cover letter when requested."

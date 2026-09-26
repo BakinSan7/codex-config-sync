@@ -1,0 +1,4 @@
+interface:
+  display_name: "СВОЙ · Photo Library Reconciler"
+  short_description: "Reconcile photo dates, sources, and duplicates"
+  default_prompt: "Use $photo-library-reconciler to reconcile these photos and videos with my library."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "СВОЙ · Хокку"
+  short_description: "Пишет короткие хокку по теме или эмоции"
+  default_prompt: "Use $haiku-writer to write a haiku about this theme."

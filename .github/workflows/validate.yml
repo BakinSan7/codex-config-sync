@@ -38,7 +38,7 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Run public safety audit
-        run: python scripts/codex_config_sync.py doctor --platform ${{ runner.os == 'Windows' && 'windows' || 'macos' }} --public-audit
+        run: python scripts/portable_config.py scan --repo-root . --public-audit
 
       - name: Smoke-test Windows wrapper
         if: runner.os == 'Windows'
@@ -47,10 +47,11 @@ jobs:
           $env:CODEX_HOME = Join-Path $env:RUNNER_TEMP 'codex-config-sync-codex'
           $env:AGENTS_HOME = Join-Path $env:RUNNER_TEMP 'codex-config-sync-agents'
           $env:CLAUDE_CONFIG_DIR = Join-Path $env:RUNNER_TEMP 'codex-config-sync-claude'
-          .\codex-sync.ps1 doctor --public-audit
-          .\codex-sync.ps1 plan --direction to-device
-          .\codex-sync.ps1 apply
+          .\codex-sync.ps1 catalog
+          .\codex-sync.ps1 bootstrap --working-tree --skills navigate-project,fact-check-post
           .\codex-sync.ps1 verify
+          if (-not (Test-Path (Join-Path $env:CLAUDE_CONFIG_DIR 'skills\fact-check-post\SKILL.md'))) { throw 'chosen skill missing' }
+          if (Test-Path (Join-Path $env:CLAUDE_CONFIG_DIR 'skills\haiku-writer')) { throw 'unchosen skill installed' }
 
       - name: Smoke-test macOS wrapper
         if: runner.os == 'macOS'
@@ -59,10 +60,11 @@ jobs:
           export CODEX_HOME="$RUNNER_TEMP/codex-config-sync-codex"
           export AGENTS_HOME="$RUNNER_TEMP/codex-config-sync-agents"
           export CLAUDE_CONFIG_DIR="$RUNNER_TEMP/codex-config-sync-claude"
-          ./codex-sync.sh doctor --public-audit
-          ./codex-sync.sh plan --direction to-device
-          ./codex-sync.sh apply
+          ./codex-sync.sh catalog --lang en
+          ./codex-sync.sh bootstrap --working-tree --skills navigate-project,fact-check-post
           ./codex-sync.sh verify
+          test -f "$CLAUDE_CONFIG_DIR/skills/fact-check-post/SKILL.md"
+          test ! -e "$CLAUDE_CONFIG_DIR/skills/haiku-writer"
 
       - name: Check whitespace errors
         run: git diff --check

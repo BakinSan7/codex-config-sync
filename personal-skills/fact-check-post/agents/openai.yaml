@@ -1,0 +1,4 @@
+interface:
+  display_name: "СВОЙ · Fact Check Post"
+  short_description: "Verify public claims in posts and articles"
+  default_prompt: "Use $fact-check-post to verify this post and return a source-backed verdict."

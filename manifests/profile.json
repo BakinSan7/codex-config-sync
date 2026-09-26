@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "repository": "BakinSan7/codex-config-sync",
+  "applications": [
+    "codex",
+    "claude"
+  ],
+  "codex_only_skills": [
+    "codex-weekly-mentor",
+    "context-watchdog",
+    "playwright-interactive"
+  ],
+  "optional_skills": [],
+  "claude_settings": {},
+  "inventory_only": [
+    "plugins",
+    "device-local MCP",
+    "hooks",
+    "project instructions",
+    "scheduled tasks"
+  ],
+  "note": "Set repository to the owner/name of your own private copy. One source for shared instructions; independent installed copies for each app."
+}

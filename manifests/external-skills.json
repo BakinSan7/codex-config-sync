@@ -1,0 +1,51 @@
+{
+  "codex_skill_installer": [
+    {
+      "name": "deep-research",
+      "repo": "alirezarezvani/claude-skills",
+      "path": "research/deep-research/skills/deep-research",
+      "ref": "aa8d778811a557a2c28ccadda4cf3d0bd028a4cc",
+      "license": "MIT"
+    },
+    {
+      "name": "youtube-research",
+      "repo": "timbroddin/skills",
+      "path": "skills/youtube-research",
+      "ref": "2549b676c30e4ded58fc9ab050b5bcd8d98b15a2"
+    },
+    {
+      "name": "playwright",
+      "repo": "openai/skills",
+      "path": "skills/.curated/playwright",
+      "ref": "a5119697b819090e00e5d11ee1d86834d7c1043a",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "playwright-interactive",
+      "repo": "openai/skills",
+      "path": "skills/.curated/playwright-interactive",
+      "ref": "ecc1fb8bc0b82f1d3c7a92a82167ae8e8e613a67",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "gpt-image-2-style-library",
+      "repo": "freestylefly/awesome-gpt-image-2",
+      "path": "agents/skills/gpt-image-2-style-library",
+      "ref": "b477278bb2a36d4c59655eb0daa4ce48e8dbc4c4",
+      "license": "MIT"
+    },
+    {
+      "name": "acceptance-frames",
+      "repo": "BakinSan7/acceptance-frames",
+      "path": ".",
+      "include": [
+        "SKILL.md",
+        "LICENSE",
+        "references",
+        "scripts"
+      ],
+      "ref": "4715a133909c79e296445591967389e86ce68179",
+      "license": "MIT"
+    }
+  ]
+}
